@@ -3,10 +3,11 @@
 [-] Write a class for VAR model.
     [x] Init function 
     [x] LoadData
-    [ ] SolveFunction
-        [ ] Need multi thread for acceleration
+    [x] SolveFunction
+        [-] Need multi thread for acceleration
         [ ] Run on GPU
     [ ] Utilities
+        [ ] Benchmark Functions
     [x] Desconstruction
 
 [ ] Function for ADF
@@ -21,5 +22,5 @@
 
 [-] Data visualization 
     [-] Network Diagram
-    [-] 
-
+    [-] Use ROOT CERN
+    [-] Use JS
