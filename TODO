@@ -1,0 +1,25 @@
+[x] Make a class for polynominal fit.
+
+[-] Write a class for VAR model.
+    [x] Init function 
+    [x] LoadData
+    [ ] SolveFunction
+        [ ] Need multi thread for acceleration
+        [ ] Run on GPU
+    [ ] Utilities
+    [x] Desconstruction
+
+[ ] Function for ADF
+
+[ ] class for Granger Casaulty 
+    [ ] Need VAR model
+
+[ ] Class for data proprocess
+
+[ ] Class for csv handler
+    [-] Use a CSV library
+
+[-] Data visualization 
+    [-] Network Diagram
+    [-] 
+
