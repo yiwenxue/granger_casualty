@@ -1,3 +1,7 @@
+#include <cstdio>
+#include <cstdlib>
+#include <gsl/gsl_matrix_double.h>
+#include <gsl/gsl_statistics_double.h>
 #include <mathematics.h>
 #include <var.h>
 
@@ -84,6 +88,10 @@ TVar::Init(int _length,
     for (int i = 0; i < dimension; ++i) {
         data[i] = (double *)malloc(sizeof(double ) * data_length);
         errors[i] = (double *)malloc(sizeof(double ) * data_length);
+        for (int j = 0; j < data_length; ++j) {
+            data[i][j] = 0.0;
+            errors[i][j] = 0.0;
+        }
     }
 
     sigma = (double *)malloc(sizeof(double) * dimension);
@@ -94,6 +102,9 @@ TVar::Init(int _length,
         model[i] = (double **)malloc(sizeof(double *) * dimension);
         for (int j = 0; j < dimension; ++j) {
             model[i][j] = (double *) malloc (sizeof(double) * dimension);
+            for (int k = 0; k < dimension; ++k) {
+                model[i][j][k] = 0.0;
+            }
         }
     }
 
@@ -141,11 +152,56 @@ int TVar::LoadData(double **input,
 }
 
 int
-TVar::SurGen()
+TVar::SurGen(int _length,
+             int _dimension,
+             int _latency)
 {
+    dimension = _dimension;
+    data_length = _length;
+    latency = _latency;
+    Init(data_length, dimension, latency);
     for (int i = 0; i < dimension; ++i) {
         GenpinkNoise(data[i], 2.0, data_length);
     }
+    for (int i = 0; i < dimension; ++i) {
+        double mean=0;
+        for (int j = 0; j < data_length; ++j) {
+            mean += data[i][j] > 0 ? data[i][j]:-data[i][j];
+        }
+        mean /= data_length;
+        for (int j = 0; j < data_length; ++j) {
+            data[i][j] /= mean;
+            data[i][j] += data[(i+2)%dimension][(j-2+data_length)%data_length];
+        }
+    }
+    for (int i = 0; i < data_length; ++i) {
+        printf("[%d]: ",i);
+        for (int j = 0; j < dimension; ++j) {
+            printf("%11.3lf,",data[j][i]);
+        }
+        printf("\n");
+    }
+    Solve();
+    int Dimen = dimension * latency + 1;
+    printf("The matrix:\n");
+    for (int i = 0; i < Dimen; ++i) {
+        for (int j = 0; j < Dimen; ++j) {
+            printf("%11.3lf,",gsl_matrix_get(A, i, j));
+        }
+        printf("\n");
+    }
+    printf("The fit result:\n");
+    for (int i = 0; i < latency; ++i) {
+        printf("parameter[%d]:\n",i+1);
+        for (int j = 0; j < dimension; ++j) {
+            for (int k = 0; k < dimension; ++k) {
+                printf("%11.3lf,", model[i][j][k]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+    printf("All finished");
     return 0;
 }
 
@@ -183,6 +239,7 @@ TVar::Solve()
             gsl_matrix_set(A, i, j, gsl_matrix_get(A, j, i));
         }
     }
+    std::cout << "Filled matrix" << std::endl;
 
 
     /* Third place */
@@ -205,6 +262,18 @@ TVar::Solve()
         gsl_linalg_LU_decomp(A, p, &s);
         gsl_linalg_LU_solve(A, p, b, x);
         constants[i] = gsl_vector_get(x, 0);
+
+        printf("%dth b\n",i);
+        for (int j = 0;j  < Dimen; ++j) {
+            printf("%10.3lf,",gsl_vector_get(b, j));
+        }
+        printf("\n");
+
+        printf("%dth parameter\n",i);
+        for (int j = 0;j  < Dimen; ++j) {
+            printf("%10.3lf,",gsl_vector_get(x, j));
+        }
+        printf("\n");
         
         // Fill the result into matrix;
         for (int j = 0; j < latency ; ++j) {

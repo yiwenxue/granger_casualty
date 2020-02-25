@@ -37,11 +37,11 @@ class TVar{
 
     public:
         /// @details Init() is the function to initialize this Object, it will free memories, and realloc new memories for new analysis 
-        int Init(int length, int size, int latency);
+        int Init(int _length, int _size, int _latency);
         /// @details LoadData() will load in the data after you initialized memories.
         int LoadData(double **input, int length, int size);
         /// surrogate data generate 
-        int SurGen();
+        int SurGen(int _length, int _size, int _latency);
         /// @details
         int Solve();
         /// @details 

@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/home/yiwen/program/causality/build",
+  "command": "/usr/bin/clang++   -I/home/yiwen/program/causality/src  -Wall -m64 -O2   -std=gnu++17 -o CMakeFiles/mylib.dir/src/utility.cpp.o -c /home/yiwen/program/causality/src/utility.cpp",
+  "file": "/home/yiwen/program/causality/src/utility.cpp"
+},
+{
+  "directory": "/home/yiwen/program/causality/build",
+  "command": "/usr/bin/clang++   -I/home/yiwen/program/causality/src  -Wall -m64 -O2   -std=gnu++17 -o CMakeFiles/mylib.dir/src/polyfit.cpp.o -c /home/yiwen/program/causality/src/polyfit.cpp",
+  "file": "/home/yiwen/program/causality/src/polyfit.cpp"
+},
+{
+  "directory": "/home/yiwen/program/causality/build",
+  "command": "/usr/bin/clang++   -I/home/yiwen/program/causality/src  -Wall -m64 -O2   -std=gnu++17 -o CMakeFiles/mylib.dir/src/var.cpp.o -c /home/yiwen/program/causality/src/var.cpp",
+  "file": "/home/yiwen/program/causality/src/var.cpp"
+},
+{
+  "directory": "/home/yiwen/program/causality/build",
+  "command": "/usr/bin/clang++   -I/home/yiwen/program/causality/src  -Wall -m64 -O2   -std=gnu++17 -o CMakeFiles/mylib.dir/src/noise.cpp.o -c /home/yiwen/program/causality/src/noise.cpp",
+  "file": "/home/yiwen/program/causality/src/noise.cpp"
+},
+{
+  "directory": "/home/yiwen/program/causality/build",
+  "command": "/usr/bin/clang++   -I/home/yiwen/program/causality/src  -Wall -m64 -O2   -std=gnu++17 -o CMakeFiles/mylib.dir/src/statis.cpp.o -c /home/yiwen/program/causality/src/statis.cpp",
+  "file": "/home/yiwen/program/causality/src/statis.cpp"
+},
+{
+  "directory": "/home/yiwen/program/causality/build",
+  "command": "/usr/bin/clang++   -I/home/yiwen/program/causality/src  -Wall -m64 -O2   -std=gnu++17 -o CMakeFiles/main.dir/src/main.cpp.o -c /home/yiwen/program/causality/src/main.cpp",
+  "file": "/home/yiwen/program/causality/src/main.cpp"
+}
+]

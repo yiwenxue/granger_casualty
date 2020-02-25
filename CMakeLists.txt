@@ -12,6 +12,7 @@ add_library(mylib STATIC
     src/polyfit.cpp
     src/var.cpp
     src/noise.cpp
+    src/statis.cpp
     )
 
 add_executable(main src/main.cpp)

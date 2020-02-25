@@ -44,7 +44,7 @@ GenpinkNoise(double *noise,
              int size)
 {
     std::default_random_engine generator;
-    generator.seed(time(NULL));
+    generator.seed(clock());
     std::normal_distribution<double> distribution(0.0,10.0);
     for (int i = 0; i < size; ++i) {
         noise[i] = distribution(generator);
