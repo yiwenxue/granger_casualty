@@ -30,6 +30,36 @@ class TAr{
 
 };
 
+class AR{
+    public:
+        AR();
+        ~AR();
+
+    public: 
+        int Init(int _length, int _latency);
+        int LoadData(double *_input, int _length);
+        int SurGen(int _length, int _latency, double _noise);
+        int Solve();
+        int freemem();
+
+    private:
+        int length;
+        int latency;
+        int Dimen;
+        int loy;
+        int noy;
+
+        double *data;
+        double *errors;
+        double *paramenter;
+        double **y;
+
+        gsl_matrix *A;
+        gsl_vector *x, *b;
+        gsl_permutation *p;
+};
+
+
 class TVar{
     public:
         TVar();

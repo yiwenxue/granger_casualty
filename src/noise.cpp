@@ -1,4 +1,6 @@
 #include <noise.h>
+#include <string>
+#include <iostream>
 
 double*
 pinkNoise(double exponent,
@@ -89,9 +91,10 @@ test_noise(void )
     TCanvas *cr = new TCanvas("canvas1");
     cr->cd();
     TGraph *gr = new TGraph(1000,x,y);
-    gr->Draw();
+    gr->SetTitle("Noise signal");
+    gr->Draw("ALC");
     cr->Update();
-    cr->Print("noise.pdf","Title:noise");
+    cr->Print("noise.pdf","Title:Noise");
     cr->Clear();
     
     int complex_size = ((int)(1000*1.0+0.5))/2+1;
@@ -105,9 +108,10 @@ test_noise(void )
     }
     delete gr; 
     gr = new TGraph(complex_size,x,y);
-    gr->Draw();
+    gr->SetTitle("Power spectrum");
+    gr->Draw("ALC");
     cr->Update();
-    cr->Print("Powerspec.pdf","Title:powerspec");
+    cr->Print("powerspec.pdf","Title:Powerspec");
     cr->Clear();
     delete cr;
     delete gr; 

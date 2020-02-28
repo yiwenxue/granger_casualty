@@ -1,9 +1,275 @@
+#include <RtypesCore.h>
+#include <TCanvas.h>
+#include <TGraph.h>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
+#include <gsl/gsl_linalg.h>
 #include <gsl/gsl_matrix_double.h>
+#include <gsl/gsl_permutation.h>
 #include <gsl/gsl_statistics_double.h>
+#include <gsl/gsl_vector_double.h>
+#include <iostream>
 #include <mathematics.h>
+#include <string>
 #include <var.h>
+
+
+AR::AR()
+{
+    data = NULL; errors = NULL; paramenter = NULL; y = NULL;
+    A = NULL; x = NULL; b = NULL; p = NULL;
+}
+
+AR::~AR()
+{
+    freemem();
+}
+
+int
+AR::freemem()
+{
+    if(data != NULL)
+        free(data);
+    if(errors != NULL)
+        free(errors);
+    if(paramenter!=NULL)
+        free(paramenter);
+    if( y != NULL)
+        free(y);
+    if(A!=NULL)
+        gsl_matrix_free(A);
+    if(x!=NULL)
+        gsl_vector_free(x);
+    if(b!=NULL)
+        gsl_vector_free(b);
+    if(p!=NULL)
+        gsl_permutation_free(p);
+    return 0;
+}
+
+int
+AR::Init(int _length, int _latency)
+{
+    length = _length;
+    latency = _latency;
+    Dimen = latency + 1;
+    noy = latency + 1;
+    loy = length - latency;
+
+    freemem();
+
+    data = (double *)malloc(sizeof(double) * length);
+    errors = (double *)malloc(sizeof(double) * length);
+    for (int i = 0; i < length; ++i) {
+        data[i] = 0.0;
+        errors[i] = 0.0;
+    }
+    paramenter = (double *)malloc(sizeof(double) * Dimen);
+    A = gsl_matrix_alloc(Dimen, Dimen);
+    x = gsl_vector_alloc(Dimen);
+    b = gsl_vector_alloc(Dimen);
+    p = gsl_permutation_alloc(Dimen);
+    for (int i = 0; i < Dimen; ++i) {
+        gsl_vector_set(x, i, 0.0);
+        gsl_vector_set(b, i, 0.0);
+        for (int j = 0; j < Dimen; ++j) {
+            gsl_matrix_set(A, i, j, 0.0);
+        }
+    }
+    y = (double **)malloc(sizeof(double *) * Dimen);
+    for (int i = 0; i < latency + 1; ++i) {
+        y[i] = data+latency-i;
+    }
+    return 0;
+}
+
+int
+AR::LoadData(double *_input, int _length)
+{
+    if(_length != length){
+        fprintf(stderr, "ERROR: Size doesn't match~\n");
+        return -1;
+    }
+    for (int i = 0; i < length; ++i) {
+        data[i] = _input[i];
+    }
+    return 0;
+}
+
+int
+AR::SurGen(int _length, int _latency, double _noise)
+{
+    Init(_length, _latency);
+    double *errors = pinkNoise(_noise,length);
+    srand(time(NULL));
+    for (int i = 0; i < latency; ++i) {
+        data[i] = rand()%10000/1000.0;
+    }
+    for (int i = 0; i < Dimen; ++i) {
+        paramenter[i] = rand()%10000/10000.0;
+    }
+    paramenter[0] = rand()%10000/1000.0;
+    paramenter[0] = 0.0;
+    double mean = gsl_stats_mean(paramenter+1, 1, latency);
+
+    printf("Parameters(init):");
+    printf("%8.3lf",paramenter[0]);
+    for (int i = 1; i < Dimen; ++i) {
+        paramenter[i] -= mean;
+        printf("%8.3lf",paramenter[i]);
+    }
+    printf("\n");
+    double *x = new double[length];
+    for (int i = latency; i < length; ++i) {
+        data[i] = 0;
+        for (int j = 0; j < latency; ++j) {
+            data[i] += paramenter[j+1] * data[(i-j-1)];
+        }
+        data[i] += paramenter[0];
+        /* data[i] += errors[i]/1000; */
+        /* errors[i] = 0.0; */
+    }
+    for (int i = 0; i < length; ++i) {
+        x[i] = i; 
+    }
+    auto c1 = new TCanvas("c1");
+    c1->cd();
+    TGraph *gr = new TGraph(length,x,data);
+    gr->SetTitle(("AR(" + std::to_string(latency) + ")").c_str());
+    gr->SetMarkerStyle(2);
+    gr->SetMarkerColor(3);
+    gr->Draw("AP");
+    c1->Update();
+
+    for (int i = latency; i < length; ++i) {
+        data[i] += errors[i] / 100.0;
+    }
+
+    TGraph *gr3 = new TGraph(length,x,data);
+    gr3->SetLineColor(2);
+    gr3->Draw("L");
+    c1->Update();
+
+    /* printf("array:\t"); */
+    /* for (int i = 0; i < length; ++i) { */
+    /*     /1* data[i] += errors[i] / 100; *1/ */
+    /*     printf("%8.2lf",data[i]); */
+    /* } */
+    /* printf("\n"); */
+
+    /* for (int i = 0; i < noy; ++i) { */
+    /*     printf("array[%d]: ",i); */
+    /*     for (int j = 0; j < loy; ++j) { */
+    /*         printf("%6.2lf",y[i][j]); */
+    /*     } */
+    /*     printf("\n"); */
+    /* } */
+    Solve();
+
+    for (int i = latency; i < length; ++i) {
+        data[i] = 0.0;
+        for (int j = 0; j < latency; ++j) {
+            data[i] += paramenter[j+1] * data[(i-j-1)];
+        }
+        data[i] += paramenter[0];
+        /* data[i] += errors[i]/1000; */
+        /* errors[i] = 0.0; */
+    }
+    TGraph *gr2 = new TGraph(length,x,data);
+    gr2->SetMarkerStyle(1);
+    gr2->Draw("P");
+    c1->Update();
+    c1->Print("Var.pdf","Title:Var");
+    delete[] x;
+    delete c1;
+    delete gr;
+    delete gr2;
+    delete gr3;
+
+    free(errors);
+
+    return 0;
+}
+
+int
+AR::Solve()
+{
+    int s;
+    double temp;
+    gsl_matrix_set(A, 0, 0, loy);
+    for (int i = 1; i < Dimen; i++) {
+        temp = 0.0;
+        for (int j = 0; j < loy; ++j) {
+            temp += y[i][j];
+        }
+        gsl_matrix_set(A, 0, i, temp);
+    }
+    for (int i = 1; i < Dimen; ++i) {
+        for (int j = i; j < Dimen; ++j) {
+            temp = 0.0;
+            for (int k = 0; k < loy; ++k) {
+                temp += y[j][k] * y[i][k];
+            }
+            gsl_matrix_set(A, i, j, temp);
+        }
+    }
+
+    for (int i = 1; i < Dimen; ++i) {
+        for (int j = 0; j < i; ++j) {
+            gsl_matrix_set(A, i, j, gsl_matrix_get(A, j, i));
+        }
+    }
+
+    temp = 0.0; 
+    // Fill first element in b(0);
+    for (int k = 0; k < loy; ++k) {
+        temp += y[0][k];
+    }
+    gsl_vector_set(b, 0, temp);
+    // Fill the rest b(1~Dimen-1)
+    for (int j = 1; j < Dimen; ++j) {
+        temp = 0.0; 
+        for (int k = 0; k < loy; ++k) {
+            temp += y[j][k] * y[0][k];
+        }
+        gsl_vector_set(b, j, temp);
+    }
+    /* printf("B:"); */
+    /* for (int i = 0; i < Dimen; ++i) { */
+    /*     printf("%8.2lf\t",gsl_vector_get(b, i)); */
+    /* } */
+    /* printf("\n"); */
+
+    /* std::cout << "The Matrix Index" << std::endl; */
+    /* for (int i = 0; i < Dimen; ++i) { */
+    /*     for (int j = 0; j < Dimen; ++j) { */
+    /*         printf("[%2d,%2d]\t",i,j); */
+    /*     } */
+    /*     printf("\n"); */
+    /* } */
+
+    /* std::cout << "The Matrix" << std::endl; */
+    /* for (int i = 0; i < Dimen; ++i) { */
+    /*     for (int j = 0; j < Dimen; ++j) { */
+    /*         printf("%11.3lf,",gsl_matrix_get(A, i, j)); */
+    /*     } */
+    /*     printf("\n"); */
+    /* } */
+
+    gsl_linalg_LU_decomp(A, p, &s);
+    gsl_linalg_LU_solve(A, p, b, x);
+
+    printf("Parameters(afte):");
+    for (int i = 0; i < Dimen; i++) {
+        paramenter[i] = gsl_vector_get(x, i);
+        printf("%8.3lf",paramenter[i]);
+    }
+    printf("\n");
+
+
+    return 0;
+}
 
 TVar::TVar(){
     // The process should be 
@@ -122,13 +388,11 @@ TVar::Init(int _length,
     /* First place */
     // data in y is: 
     // (latency=0, dimansion=1,2,3...)-(latency=1,......)-(latency=2,....)-(latency=3,.....)
-    latency ++;
-    for (int i = 0; i < latency; ++i) {
+    for (int i = 0; i < latency + 1; ++i) {
         for (int j = 0; j < dimension; ++j) {
             y[i*dimension+j] = data[j]+latency - i;
         }
     }
-    latency --;
     return 0;
 }
 
@@ -157,21 +421,20 @@ TVar::SurGen(int _length,
              int _latency)
 {
     dimension = _dimension;
+    for (int i = 0; i < dimension; ++i) {
+        std::cout << i << "\t" << (i+1)%dimension << std::endl;
+    }
     data_length = _length;
     latency = _latency;
     Init(data_length, dimension, latency);
+
     for (int i = 0; i < dimension; ++i) {
-        GenpinkNoise(data[i], 2.0, data_length);
+        data[i][0] = i+1;
     }
-    for (int i = 0; i < dimension; ++i) {
-        double mean=0;
-        for (int j = 0; j < data_length; ++j) {
-            mean += data[i][j] > 0 ? data[i][j]:-data[i][j];
-        }
-        mean /= data_length;
-        for (int j = 0; j < data_length; ++j) {
-            data[i][j] /= mean;
-            data[i][j] += data[(i+2)%dimension][(j-2+data_length)%data_length];
+
+    for (int j = 1; j < data_length; ++j) {
+        for (int i = 0; i < dimension; ++i) {
+            data[i][j] = 0.5 * data[i][j-1] + 0.5 * data[(i+1)%dimension][j-1];
         }
     }
     for (int i = 0; i < data_length; ++i) {
